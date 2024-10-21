@@ -1,38 +1,48 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
+from termcolor import colored
 
-#Load the dataset
+# Cargar el dataset
 energy = pd.read_csv('/Users/eeguskiza/Documents/Deusto/github/machine_learning/cleaned.csv')
 
-X = energy[['year', 'energy_pc', 'land_area', 'latitude']] #Variables independientes
-y = energy['co2_emissions'] #Variable objetivo
+# Mejor combinación actual - Características: ('fossil_fuels_elec', 'renewables_elec', 'gdp_growth', 'land_area', 'entity_China'), MSE: 0.0031561436597150657, R2: 0.9465319514233926, Precisión dentro del 5%: 82.6086956521739%
+X = energy[['year','fossil_fuels_elec', 'renewables_elec', 'gdp_growth', 'land_area', 'longitude']]  # Variables independientes
+y = energy['co2_emissions']  # Variable objetivo
 
+# Dividir los datos en conjuntos de entrenamiento y prueba (80% entrenamiento, 20% prueba)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-#100,None,2,1,None,True,654673347.5962067,0.9993213758036233,81.15942028985508
+# Mejor combinación de hiperparámetros según el análisis previo
 model = RandomForestRegressor(
-    n_estimators=100, 
-    min_samples_split=2, 
+    n_estimators=100,
+    max_depth=10,
+    min_samples_split=2,
     min_samples_leaf=1,
     max_features=None,
     bootstrap=True,
     random_state=42
 )
 
+# Entrenar el modelo
 model.fit(X_train, y_train)
 
-y_pred = model.predict(X_test) #Predicciones en el conjunto de prueba
+# Hacer predicciones en el conjunto de prueba
+y_pred = model.predict(X_test)
 
-#Umbral de aceptacion
-thersold_percentage = 0.05
+# Definir un umbral de aceptación
+threshold_percentage = 0.05
 
+# Calcular el error cuadrático medio, el coeficiente de determinación R^2 y la precisión
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
-predictions_score = np.mean(np.abs((y_test - y_pred) / y_test) < thersold_percentage) * 100
+precise_predictions = np.mean(np.abs((y_test - y_pred) / y_test) < threshold_percentage) * 100
 
+# Imprimir los resultados
+print(colored("***************** RESULTADOS *****************", 'cyan', attrs=['bold']))
 print(f"Mean squared error: {mse}")
 print(f"R2 score: {r2}")
-print(f"Prediction accuracy score: {predictions_score}")
+print(f"Prediction accuracy score (within 5% threshold): {precise_predictions}%")
+print(colored("***********************************************", 'cyan', attrs=['bold']))
