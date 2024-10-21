@@ -2,20 +2,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the Dataset
+# Cargar el dataset
 energy = pd.read_csv("/Users/eeguskiza/Documents/Deusto/github/machine_learning/energy.csv")
 
-# Plot initial distributions to understand the data
-plt.figure(figsize=(14, 8))
-sns.histplot(energy['Access to electricity (% of population)'], kde=True, color='blue', label='Access to Electricity')
-sns.histplot(energy['Renewable energy share in the total final energy consumption (%)'], kde=True, color='green', label='Renewable Share')
-plt.legend()
-plt.title('Initial Distribution of Energy Features')
-plt.xlabel('Value')
-plt.ylabel('Frequency')
+# Plotear distribuciones iniciales para entender los datos
+numerical_cols = energy.select_dtypes(include=['float64', 'int64']).columns
+
+plt.figure(figsize=(20, 12))
+plt.suptitle('Distribución Inicial de las Características Numéricas', fontsize=20)
+num_plots_per_row = 3
+for i, col in enumerate(numerical_cols, 1):
+    plt.subplot((len(numerical_cols) + num_plots_per_row - 1) // num_plots_per_row, num_plots_per_row, i)
+    sns.histplot(energy[col], kde=True)
+    plt.title(col)
+    plt.xlabel('Valor')
+    plt.ylabel('Frecuencia')
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.show()
 
-# Rename the columns to shorter names
+# Renombrar columnas a nombres más cortos
 column_rename_dict = {
     'Entity': 'entity',
     'Year': 'year',
@@ -42,44 +47,39 @@ column_rename_dict = {
 
 energy.rename(columns=column_rename_dict, inplace=True)
 
-# Drop rows with missing values
+# Eliminar filas con valores faltantes
 energy.dropna(inplace=True)
 
-# Drop duplicate rows
+# Eliminar filas duplicadas
 energy.drop_duplicates(inplace=True)
 
-# Cap the outliers instead of removing them using the 1st and 99th percentile
-numerical_cols = [
-    'access_electricity', 'renewable_share', 'fossil_fuels_elec', 'nuclear_elec', 'renewables_elec',
-    'low_carbon_elec', 'energy_pc', 'energy_intensity', 'co2_emissions', 'renewables_pc',
-    'gdp_growth', 'gdp_pc', 'density', 'land_area'
-]
-
-# Remove columns that may not exist
+# Limitar outliers usando percentil 1 y 99
 numerical_cols = [col for col in numerical_cols if col in energy.columns]
-
 for col in numerical_cols:
     lower_percentile = energy[col].quantile(0.01)
     upper_percentile = energy[col].quantile(0.99)
     energy[col] = energy[col].clip(lower=lower_percentile, upper=upper_percentile)
 
-# Normalize numerical data for Machine Learning
+# Normalizar los datos numéricos para Machine Learning
 from sklearn.preprocessing import MinMaxScaler
 
 scaler = MinMaxScaler()
 energy[numerical_cols] = scaler.fit_transform(energy[numerical_cols])
 
-# Export cleaned DataFrame to a new CSV file
+# Exportar el DataFrame limpio a un nuevo archivo CSV
 energy.to_csv("cleaned.csv", index=False)
 
-# Plot final distributions to compare with the initial data
-plt.figure(figsize=(14, 8))
-sns.histplot(energy['access_electricity'], kde=True, color='blue', label='Access to Electricity')
-sns.histplot(energy['renewable_share'], kde=True, color='green', label='Renewable Share')
-plt.legend()
-plt.title('Final Distribution of Energy Features (After Cleaning)')
-plt.xlabel('Value')
-plt.ylabel('Frequency')
+# Plotear distribuciones finales para comparar con los datos iniciales
+plt.figure(figsize=(20, 12))
+plt.suptitle('Distribución Final de las Características Numéricas (Después de Limpiar)', fontsize=20)
+num_plots_per_row = 3
+for i, col in enumerate(numerical_cols, 1):
+    plt.subplot((len(numerical_cols) + num_plots_per_row - 1) // num_plots_per_row, num_plots_per_row, i)
+    sns.histplot(energy[col], kde=True)
+    plt.title(col)
+    plt.xlabel('Valor')
+    plt.ylabel('Frecuencia')
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.show()
 
 print("El dataset ha sido limpiado, normalizado y exportado como 'cleaned.csv'.")
